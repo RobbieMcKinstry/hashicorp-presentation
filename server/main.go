@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 )
 
@@ -45,6 +46,8 @@ type SimulatedService struct {
 	MaxThroughput,
 	RequestSoftLimit,
 	RequestHardLimit uint64
+
+	StolenCPU uint64
 }
 
 // NewSNewSimulatedService is the constructor for a SimulatedService.
@@ -66,6 +69,10 @@ func (service *SimulatedService) ServeHTTP(w http.ResponseWriter, req *http.Requ
 		service.handleHealthCheck(w, req)
 	case strings.HasPrefix(path, "/metrics/throughput"):
 		service.handleThroughput(w, req)
+	case strings.HasPrefix(path, "/neighbors/add"):
+		service.handleNeighborsAdd(w, req)
+	case strings.HasPrefix(path, "/neighbors/remove"):
+		service.handleNeighborsRemove(w, req)
 	default:
 		http.Error(w, "No such route.", http.StatusNotFound)
 	}
@@ -79,11 +86,66 @@ func (service *SimulatedService) handleHealthCheck(w http.ResponseWriter, req *h
 	}
 	var encoder = json.NewEncoder(w)
 	var alive = service.IsAlive(load)
-	var responseBody = HealthCheckResponse{Alive: alive}
+	var responseBody = HealthCheckResponse{
+		Alive:        alive,
+		AvailableCPU: fmt.Sprintf("%.0f", 100*service.AvailableCPU()),
+	}
 	err = encoder.Encode(responseBody)
 	if err != nil {
 		http.Error(w, "Error when writing response.", http.StatusInternalServerError)
 	}
+}
+
+func (service *SimulatedService) handleNeighborsAdd(w http.ResponseWriter, req *http.Request) {
+	var previousStolenCPU = service.StolenCPU // keep a copy for reporting
+	var cpu, err = service.getCPU(req)
+	if err != nil {
+		fmt.Fprintf(w, "Error parsing CPU param: %v", html.EscapeString(err.Error()))
+		return
+	}
+	// Now that we've fetched the CPU, we need to update our stolen CPU counter
+	// with this new value.
+	atomic.AddUint64(&service.StolenCPU, cpu)
+	// Response with success.
+	var encoder = json.NewEncoder(w)
+	var responseBody = NeighborAddResponse{
+		PreviousStolenCPU: previousStolenCPU,
+		StolenCPU:         service.StolenCPU,
+	}
+	err = encoder.Encode(responseBody)
+	if err != nil {
+		http.Error(w, "Error when writing response.", http.StatusInternalServerError)
+	}
+}
+
+func (service *SimulatedService) handleNeighborsRemove(w http.ResponseWriter, req *http.Request) {
+	var cpu, err = service.getCPU(req)
+	if err != nil {
+		fmt.Fprintf(w, "Error parsing CPU param: %v", html.EscapeString(err.Error()))
+		return
+	}
+	// Decrease the value of the stolen CPU as per https://golang.org/pkg/sync/atomic/#AddUint64
+	atomic.AddUint64(&service.StolenCPU, ^(cpu - 1))
+	// Response with success.
+	var encoder = json.NewEncoder(w)
+	var responseBody = NeighborRemoveResponse{
+		RestoredCPU: cpu,
+		StolenCPU:   service.StolenCPU,
+	}
+	err = encoder.Encode(responseBody)
+	if err != nil {
+		http.Error(w, "Error when writing response.", http.StatusInternalServerError)
+	}
+}
+
+// getCPU returns the value of the cpu parameter within the request's URL parameters.
+// Used for modifying the CPU avaiable to this service.
+// The CPU parameter is used by "/neighbors/add" to steal CPU from this service
+// (by adding a noisy neighbor) or restoring stolen CPU (by removing a noisy neighbor).
+func (service *SimulatedService) getCPU(req *http.Request) (uint64, error) {
+	// Fetch the CPU.
+	var cpu = req.FormValue("cpu")
+	return strconv.ParseUint(cpu, 10, 64)
 }
 
 // getLoad returns the value of the load provided to this server within the
@@ -95,7 +157,7 @@ func (service *SimulatedService) getLoad(req *http.Request) (uint64, error) {
 }
 
 func (service *SimulatedService) handleThroughput(w http.ResponseWriter, req *http.Request) {
-	// Are we changinge the throughput or requesting it?
+	// Determine if this request changes the throughput or requests it.
 	switch req.Method {
 	case http.MethodGet:
 		service.handleThroughputGET(w, req)
@@ -122,7 +184,7 @@ func (service *SimulatedService) handleThroughputGET(w http.ResponseWriter, req 
 
 func (service *SimulatedService) CalculateThroughput(load uint64) uint64 {
 	var throughput uint64
-	if load < service.AvailableThroughput() {
+	if load <= service.AvailableThroughput() {
 		throughput = load
 	} else if load <= service.ModifiedSoftLimit() {
 		throughput = service.AvailableThroughput()
@@ -145,6 +207,7 @@ func (service *SimulatedService) degradedThroughput(load uint64) uint64 {
 }
 
 func (service *SimulatedService) handleThroughputPOST(w http.ResponseWriter, req *http.Request) {
+	panic("TODO handle updating throughput")
 }
 
 // IsAlive returns true if the server hasn't fallen over from too much load.
@@ -155,7 +218,7 @@ func (service *SimulatedService) IsAlive(load uint64) bool {
 // AvailableCPU returns, as a fraction from 0 to 1, the amount of CPU
 // available to this service. Noisy neighbors reduce the amount of CPU available.
 func (service *SimulatedService) AvailableCPU() float64 {
-	return 1.0
+	return float64(100-service.StolenCPU) / 100.0
 }
 
 // AvailableThroughput returns the number of requests per second processable
