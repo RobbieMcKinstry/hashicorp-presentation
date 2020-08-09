@@ -65,9 +65,8 @@ func addLoadText() func(uint64) {
 }
 
 func addMachines() {
-	var machine = NewMachine("Machine 1")
-	machine.Title = "Machine 1"
-	machine.SetRect(0, 4, 50, 9)
+	var width, height = ui.TerminalDimensions()
+	var machine = NewMachine("Machine 1", 0, 4, width, 3*height/10)
 	ui.Render(machine)
 }
 
