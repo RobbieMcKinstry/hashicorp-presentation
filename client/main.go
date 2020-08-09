@@ -38,20 +38,25 @@ func main() {
 	<-shutdown
 }
 
+func addLoad() {
+
+}
+
 func addTextbox() <-chan struct{} {
 	// Add a textbox.
-	area := NewTextArea()
-	area.Title = "Terminal"
-	area.SetRect(0, 0, 50, 3)
-	ui.Render(area) // Render again, in case a key has yet to be pressed.
-	return area.Shutdown()
+	var width, _ = ui.TerminalDimensions()
+	var header = NewHeader(0, 0, width, 3)
+	ui.Render(header) // Render again, in case a key has yet to be pressed.
+	return header.Shutdown()
 }
 
 func addMachines() {
-	var machine = NewMachine("Machine 1")
-	machine.Title = "Machine 1"
-	machine.SetRect(0, 4, 50, 9)
-	ui.Render(machine)
+	/*
+		var machine = NewMachine("Machine 1")
+		machine.Title = "Machine 1"
+		machine.SetRect(0, 4, 50, 9)
+		ui.Render(machine)
+	*/
 }
 
 var nodeTmpl = `Addr: %v

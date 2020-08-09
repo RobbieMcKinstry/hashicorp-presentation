@@ -16,16 +16,18 @@ type TextArea struct {
 	widgets.Paragraph
 	events   <-chan ui.Event
 	shutdown chan struct{}
+	onChange func()
 }
 
-func NewTextArea() *TextArea {
+func NewTextArea(callback func()) *TextArea {
 	var area = &TextArea{
 		buffer:    []rune{},
 		Paragraph: *widgets.NewParagraph(),
 		events:    ui.PollEvents(),
 		shutdown:  make(chan struct{}),
+		onChange:  callback,
 	}
-	ui.Render(area)
+	area.onChange()
 	go area.watchEvents()
 
 	return area
@@ -37,6 +39,7 @@ func (area *TextArea) Shutdown() <-chan struct{} {
 
 func (area *TextArea) watchEvents() {
 	for e := range area.events {
+		fmt.Println("Received event ", e.ID)
 		if e.Type != ui.KeyboardEvent {
 			continue
 		}
@@ -50,7 +53,6 @@ func (area *TextArea) watchEvents() {
 				character = " "
 			}
 			area.buffer = append(area.buffer, []rune(character)...)
-
 		} else if isBackspace(event) {
 			// Remove the last item from the buffer.
 			if len(area.buffer) < 1 {
@@ -62,8 +64,10 @@ func (area *TextArea) watchEvents() {
 			os.Exit(0)
 		}
 
+		fmt.Printf("Rendering buffer %v\n", string(area.buffer))
 		area.Paragraph.Text = string(area.buffer)
 		ui.Render(area)
+		area.onChange()
 	}
 }
 
