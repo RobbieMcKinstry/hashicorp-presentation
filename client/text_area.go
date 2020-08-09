@@ -16,6 +16,7 @@ type TextArea struct {
 	widgets.Paragraph
 	events   <-chan ui.Event
 	shutdown chan struct{}
+	onEnter  func(string)
 }
 
 func NewTextArea() *TextArea {
@@ -24,6 +25,7 @@ func NewTextArea() *TextArea {
 		Paragraph: *widgets.NewParagraph(),
 		events:    ui.PollEvents(),
 		shutdown:  make(chan struct{}),
+		onEnter:   func(string) {},
 	}
 	ui.Render(area)
 	go area.watchEvents()
@@ -33,6 +35,10 @@ func NewTextArea() *TextArea {
 
 func (area *TextArea) Shutdown() <-chan struct{} {
 	return area.shutdown
+}
+
+func (area *TextArea) OnEnter(f func(string)) {
+	area.onEnter = f
 }
 
 func (area *TextArea) watchEvents() {
@@ -57,6 +63,12 @@ func (area *TextArea) watchEvents() {
 				continue
 			}
 			area.buffer = area.buffer[:len(area.buffer)-1]
+		} else if isEnter(event) {
+			// Collect everything in the text area and send
+			// it off to the callback.
+			var contents = string(area.buffer)
+			area.buffer = make([]rune, 0)
+			area.onEnter(contents)
 		} else if isEscape(event) {
 			fmt.Println("Exit signal received.")
 			os.Exit(0)
@@ -118,5 +130,5 @@ func isEnter(event string) bool {
 }
 
 func isRenderable(event string) bool {
-	return isAlphabetic(event) || isSpace(event)
+	return isAlphanumeric(event) || isSpace(event)
 }

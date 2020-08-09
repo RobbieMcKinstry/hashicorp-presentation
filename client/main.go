@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	ui "github.com/gizak/termui/v3"
+	"github.com/gizak/termui/v3/widgets"
 )
 
 type Simulation interface {
@@ -15,11 +17,11 @@ func main() {
 	}
 	defer ui.Close()
 
-	var shutdown = addTextbox()
+	var loadTextCallback = addLoadText()
+	var eventLoop, eventWriter = NewEventLoop()
+	eventLoop.SetLoadCallback(loadTextCallback)
 
-	// TODO
-	// º Add a textbox to track the current load.
-	// º Add a paragraph element to display the current load.
+	var shutdown = addTextbox(eventWriter)
 
 	go addMachines()
 
@@ -38,13 +40,28 @@ func main() {
 	<-shutdown
 }
 
-func addTextbox() <-chan struct{} {
+func addTextbox(callback func(string)) <-chan struct{} {
 	// Add a textbox.
 	area := NewTextArea()
+	area.OnEnter(callback)
 	area.Title = "Terminal"
-	area.SetRect(0, 0, 50, 3)
+	var width, _ = ui.TerminalDimensions()
+	area.SetRect(0, 0, width/2, 3)
 	ui.Render(area) // Render again, in case a key has yet to be pressed.
 	return area.Shutdown()
+}
+
+func addLoadText() func(uint64) {
+	var textbox = widgets.NewParagraph()
+	textbox.Title = "Current Load"
+	textbox.Text = "0 reqs/s"
+	var width, _ = ui.TerminalDimensions()
+	textbox.SetRect(1+width/2, 0, width, 3)
+	ui.Render(textbox)
+	return func(load uint64) {
+		textbox.Text = fmt.Sprintf("%d reqs/s", load)
+		ui.Render(textbox)
+	}
 }
 
 func addMachines() {
