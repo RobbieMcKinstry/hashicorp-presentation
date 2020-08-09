@@ -66,8 +66,21 @@ func addLoadText() func(uint64) {
 
 func addMachines() {
 	var width, height = ui.TerminalDimensions()
-	var machine = NewMachine("Machine 1", 0, 4, width, 3*height/10)
-	ui.Render(machine)
+	var startHeight = 4
+	var endHeight = 4 + 3*height/10
+
+	var startHeight2 = endHeight + 1
+	var endHeight2 = startHeight2 + 3*height/10
+
+	var startHeight3 = endHeight2 + 1
+	var endHeight3 = startHeight3 + 3*height/10
+
+	var machine1 = NewMachine("Machine 1", 0, startHeight, width, endHeight)
+	var machine2 = NewMachine("Machine 1", 0, startHeight2, width, endHeight2)
+	var machine3 = NewMachine("Machine 1", 0, startHeight3, width, endHeight3)
+	ui.Render(machine1)
+	ui.Render(machine2)
+	ui.Render(machine3)
 }
 
 var nodeTmpl = `Addr: %v
