@@ -1,29 +1,34 @@
 package main
 
 import (
-	"fmt"
+	_ "fmt"
+	"github.com/RobbieMcKinstry/hashicorp-presentation/client/display"
 	ui "github.com/gizak/termui/v3"
-	"github.com/gizak/termui/v3/widgets"
+	_ "github.com/gizak/termui/v3/widgets"
+	"log"
 )
-
-type Simulation interface {
-	AddNeighbor()
-}
 
 func main() {
 	// Let's start the UI and add a textbox.
-	if err := ui.Init(); err != nil {
-		ExitOnError(err)
-	}
+	var display = display.NewDisplay()
 	defer ui.Close()
+	var shutdown = display.Shutdown()
 
-	var loadTextCallback = addLoadText()
-	var eventLoop, eventWriter = NewEventLoop()
-	eventLoop.SetLoadCallback(loadTextCallback)
+	// var cluster SimVisualization = NewSimulatedCluster()
+	// var newMachine = cluster.NewMachineCallback()
 
-	var shutdown = addTextbox(eventWriter)
+	// TODO Set the NewMachineCallback coming from cluster to
+	// intercept values from the event loop.
 
-	go addMachines()
+	// var loadTextCallback = addLoadText()
+	// var eventLoop, eventWriter = NewEventLoop()
+
+	// eventLoop.SetLoadCallback(loadTextCallback)
+	// eventLoop.SetMachineCallback(newMachine)
+
+	// var shutdown = addTextbox(eventWriter)
+
+	// go addMachines()
 
 	// First, we create a list of machines.
 	// Each machine has at most one service.
@@ -37,11 +42,14 @@ func main() {
 	// We write that result to the widget responsible for this machine.
 
 	// Create a variable to track the current load.
+
 	<-shutdown
 }
 
+/*
 func addTextbox(callback func(string)) <-chan struct{} {
 	// Add a textbox.
+
 	area := NewTextArea()
 	area.OnEnter(callback)
 	area.Title = "Terminal"
@@ -82,8 +90,9 @@ func addMachines() {
 	ui.Render(machine2)
 	ui.Render(machine3)
 }
-
-var nodeTmpl = `Addr: %v
-ID: %v
-Name: %v
-Status: %v`
+*/
+func ExitOnError(err error) {
+	if err != nil {
+		log.Fatal(err)
+	}
+}

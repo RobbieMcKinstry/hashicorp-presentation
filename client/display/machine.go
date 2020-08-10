@@ -1,4 +1,4 @@
-package main
+package display
 
 import (
 	ui "github.com/gizak/termui/v3"

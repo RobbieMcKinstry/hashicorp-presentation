@@ -30,3 +30,8 @@ func NewNomadSimulation() *NomadSimulation {
 
 	return &NomadSimulation{client}
 }
+
+var nodeTmpl = `Addr: %v
+ID: %v
+Name: %v
+Status: %v`
