@@ -3,6 +3,7 @@ package main
 import (
 	_ "fmt"
 	"github.com/RobbieMcKinstry/hashicorp-presentation/client/display"
+	"github.com/RobbieMcKinstry/hashicorp-presentation/client/events"
 	ui "github.com/gizak/termui/v3"
 	_ "github.com/gizak/termui/v3/widgets"
 	"log"
@@ -21,9 +22,9 @@ func main() {
 	// intercept values from the event loop.
 
 	// var loadTextCallback = addLoadText()
-	// var eventLoop, eventWriter = NewEventLoop()
-
-	// eventLoop.SetLoadCallback(loadTextCallback)
+	var eventLoop, onEnter = events.NewEventLoop() // onEnter is how events stream into the loop
+	display.SetEventCallback(onEnter)              // What to call when the UI receives an event.
+	eventLoop.SetLoadCallback(display.SetLoad)
 	// eventLoop.SetMachineCallback(newMachine)
 
 	// var shutdown = addTextbox(eventWriter)

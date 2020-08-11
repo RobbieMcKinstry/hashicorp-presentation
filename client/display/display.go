@@ -4,6 +4,7 @@ import (
 	"fmt"
 	ui "github.com/gizak/termui/v3"
 	"github.com/gizak/termui/v3/widgets"
+	"time"
 )
 
 type Display struct {
@@ -36,7 +37,25 @@ func NewDisplay() *Display {
 	display.loadText.Text = "0 reqs/s"
 	display.loadText.SetRect(1+width/2, 0, width, 3)
 
+	display.addMachine()
+
 	return display
+}
+
+func (display *Display) SetLoad(load uint64) {
+	// Don't forget to render the updated textbox.
+	defer ui.Render(display.loadText)
+	// Update the textbox's body.
+	var text = fmt.Sprintf("%d reqs/s", load)
+	display.loadText.Text = text
+	// Update the style so the text flashes green.
+	display.loadText.TextStyle.Fg = ui.ColorGreen
+	go func() {
+		defer ui.Render(display.loadText)
+		time.Sleep(1 * time.Second)
+		display.loadText.TextStyle.Fg = ui.ColorWhite
+	}()
+
 }
 
 func (display *Display) countMachines() int {
@@ -69,4 +88,8 @@ func (display *Display) addMachineAtIndex(index int) {
 
 func (display *Display) Shutdown() <-chan struct{} {
 	return display.terminal.Shutdown()
+}
+
+func (display *Display) SetEventCallback(f func(string)) {
+	display.terminal.OnEnter(f)
 }
