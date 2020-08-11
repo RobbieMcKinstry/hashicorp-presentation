@@ -18,7 +18,7 @@ type Display struct {
 func NewDisplay() *Display {
 	var err = ui.Init()
 	ExitOnError(err)
-	var width, height = ui.TerminalDimensions()
+	var width, _ = ui.TerminalDimensions()
 
 	var display = &Display{
 		terminal: NewTextArea(),
@@ -36,18 +36,35 @@ func NewDisplay() *Display {
 	display.loadText.Text = "0 reqs/s"
 	display.loadText.SetRect(1+width/2, 0, width, 3)
 
-	var startHeight = 4
-	var endHeight = 4 + 3*height/10
-	for i := 0; i < 3; i++ {
-		var id = fmt.Sprintf("Machine %v", i)
-		var machine = NewMachine(id, 0, startHeight, width, endHeight)
-		display.machines[i] = machine
-		startHeight = endHeight + 1
-		endHeight = startHeight + 3*height/10
-		ui.Render(machine)
-	}
-
 	return display
+}
+
+func (display *Display) countMachines() int {
+	for i := 0; i < len(display.machines); i++ {
+		if display.machines[i] == nil {
+			return i
+		}
+	}
+	return 3
+}
+
+func (display *Display) addMachine() {
+	// First, let's see how many machines we currently have.
+	var machineCount = display.countMachines()
+	if machineCount >= 3 {
+		panic("Cannot add another machine.")
+	}
+	display.addMachineAtIndex(machineCount)
+}
+
+func (display *Display) addMachineAtIndex(index int) {
+	var width, height = ui.TerminalDimensions()
+	var startHeight = 4 + 3*index*height/10
+	var endHeight = 4 + (index+1)*3*height/10
+	var id = fmt.Sprintf("Machine %v", index)
+	var machine = NewMachine(id, 0, startHeight, width, endHeight)
+	display.machines[index] = machine
+	ui.Render(machine)
 }
 
 func (display *Display) Shutdown() <-chan struct{} {
