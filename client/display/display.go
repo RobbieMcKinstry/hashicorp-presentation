@@ -38,6 +38,8 @@ func NewDisplay() *Display {
 	display.loadText.SetRect(1+width/2, 0, width, 3)
 
 	display.addMachine()
+	display.addMachine()
+	display.addMachine()
 
 	return display
 }
@@ -67,6 +69,12 @@ func (display *Display) countMachines() int {
 	return 3
 }
 
+func (display *Display) NewMachine(name string) {
+	// TODO Do something with the machine name
+	fmt.Println("New machine called.")
+	display.addMachine()
+}
+
 func (display *Display) addMachine() {
 	// First, let's see how many machines we currently have.
 	var machineCount = display.countMachines()
@@ -74,6 +82,8 @@ func (display *Display) addMachine() {
 		panic("Cannot add another machine.")
 	}
 	display.addMachineAtIndex(machineCount)
+	ui.Render(display.terminal)
+	ui.Render(display.loadText)
 }
 
 func (display *Display) addMachineAtIndex(index int) {

@@ -25,6 +25,7 @@ func main() {
 	var eventLoop, onEnter = events.NewEventLoop() // onEnter is how events stream into the loop
 	display.SetEventCallback(onEnter)              // What to call when the UI receives an event.
 	eventLoop.SetLoadCallback(display.SetLoad)
+	eventLoop.SetMachineCallback(display.NewMachine)
 	// eventLoop.SetMachineCallback(newMachine)
 
 	// var shutdown = addTextbox(eventWriter)
