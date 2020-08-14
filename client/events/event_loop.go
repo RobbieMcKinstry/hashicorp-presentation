@@ -2,6 +2,7 @@ package events
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 )
@@ -16,6 +17,7 @@ type EventLoop struct {
 	load               uint64
 	loadCallback       func(uint64)
 	newMachineCallback func(string)
+	newServiceCallback func(throughput, soft, hard uint64)
 }
 
 func NewEventLoop() (*EventLoop, func(string)) {
@@ -25,6 +27,7 @@ func NewEventLoop() (*EventLoop, func(string)) {
 		load:               0,
 		loadCallback:       func(uint64) {},
 		newMachineCallback: func(string) {},
+		newServiceCallback: func(uint64, uint64, uint64) {},
 	}
 
 	go loop.watchEvents()
@@ -44,6 +47,10 @@ func (loop *EventLoop) SetMachineCallback(f func(string)) {
 	loop.newMachineCallback = f
 }
 
+func (loop *EventLoop) SetServiceCallback(f func(uint64, uint64, uint64)) {
+	loop.newServiceCallback = f
+}
+
 func (loop *EventLoop) watchEvents() {
 	for e := range loop.eventStream {
 		// Check what kind of event this is.
@@ -58,6 +65,8 @@ func (loop *EventLoop) DispatchEvent(event string) {
 		loop.HandleNewMachine(event)
 	case strings.HasPrefix(event, "set load "):
 		loop.HandleSetLoad(event)
+	case strings.HasPrefix(event, "new service "):
+		loop.HandleNewService(event)
 	}
 }
 
@@ -81,6 +90,31 @@ func (loop *EventLoop) HandleNewMachine(event string) {
 	loop.newMachineCallback(machineName)
 }
 
+func (loop *EventLoop) HandleNewService(event string) {
+	// Capture the machine name by stripping away the prefix
+	var serviceParams = strings.TrimPrefix(event, "new service ")
+	serviceParams = strings.TrimSpace(serviceParams)
+	// Now, split this into four parameters:
+	// Throughput, Soft, Hard
+	var params = strings.Fields(serviceParams)
+	if len(params) != 3 {
+		ExitOnError(fmt.Errorf("Expected 3 parameters, found %v", len(params)))
+	}
+	throughput, err := strconv.ParseUint(params[0], 10, 64)
+	ExitOnError(err)
+	softLimit, err := strconv.ParseUint(params[1], 10, 64)
+	ExitOnError(err)
+	hardLimit, err := strconv.ParseUint(params[2], 10, 64)
+	ExitOnError(err)
+	loop.newServiceCallback(throughput, softLimit, hardLimit)
+}
+
 func (loop *EventLoop) sendLoad() {
 	loop.loadCallback(loop.load)
+}
+
+func ExitOnError(err error) {
+	if err != nil {
+		log.Fatal(err)
+	}
 }

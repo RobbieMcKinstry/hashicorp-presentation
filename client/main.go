@@ -1,19 +1,25 @@
 package main
 
 import (
-	_ "fmt"
+	"github.com/RobbieMcKinstry/hashicorp-presentation/client/cluster"
 	"github.com/RobbieMcKinstry/hashicorp-presentation/client/display"
 	"github.com/RobbieMcKinstry/hashicorp-presentation/client/events"
 	ui "github.com/gizak/termui/v3"
-	_ "github.com/gizak/termui/v3/widgets"
 	"log"
 )
+
+func IgnoreResponse(cluster cluster.Cluster) func(uint64, uint64, uint64) {
+	return func(throughput, soft, hard uint64) {
+		cluster.NewService(throughput, soft, hard)
+	}
+}
 
 func main() {
 	// Let's start the UI and add a textbox.
 	var display = display.NewDisplay()
 	defer ui.Close()
 	var shutdown = display.Shutdown()
+	var cluster = cluster.NewMockCluster()
 
 	// var cluster SimVisualization = NewSimulatedCluster()
 	// var newMachine = cluster.NewMachineCallback()
@@ -26,6 +32,7 @@ func main() {
 	display.SetEventCallback(onEnter)              // What to call when the UI receives an event.
 	eventLoop.SetLoadCallback(display.SetLoad)
 	eventLoop.SetMachineCallback(display.NewMachine)
+	eventLoop.SetServiceCallback(IgnoreResponse(cluster))
 	// eventLoop.SetMachineCallback(newMachine)
 
 	// var shutdown = addTextbox(eventWriter)

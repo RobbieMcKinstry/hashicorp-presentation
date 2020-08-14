@@ -71,7 +71,6 @@ func (display *Display) countMachines() int {
 
 func (display *Display) NewMachine(name string) {
 	// TODO Do something with the machine name
-	fmt.Println("New machine called.")
 	display.addMachine()
 }
 
