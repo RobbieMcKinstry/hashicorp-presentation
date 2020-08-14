@@ -3,6 +3,7 @@ package display
 import (
 	ui "github.com/gizak/termui/v3"
 	"github.com/gizak/termui/v3/widgets"
+	"time"
 )
 
 // A Machine represents a node within a cluster.
@@ -14,14 +15,17 @@ type Machine struct {
 	chart *widgets.Sparkline
 	batch *widgets.Gauge
 	cpu   *widgets.PieChart
+
+	chartStream chan float64
 }
 
 func NewMachine(name string, x1, y1, x2, y2 int) *Machine {
 	var machine = &Machine{
-		Grid:  ui.NewGrid(),
-		chart: widgets.NewSparkline(),
-		batch: widgets.NewGauge(),
-		cpu:   widgets.NewPieChart(),
+		Grid:        ui.NewGrid(),
+		chart:       widgets.NewSparkline(),
+		batch:       widgets.NewGauge(),
+		cpu:         widgets.NewPieChart(),
+		chartStream: make(chan float64, 100),
 	}
 	/////// GRID CONFIG
 	machine.Grid.SetRect(x1, y1, x2, y2)
@@ -52,6 +56,8 @@ func NewMachine(name string, x1, y1, x2, y2 int) *Machine {
 	machine.chart.LineColor = ui.ColorGreen
 	machine.chart.TitleStyle.Fg = ui.ColorBlue
 
+	go machine.watchSparkline()
+
 	var chartGroup = widgets.NewSparklineGroup(machine.chart)
 	chartGroup.Title = "Throughput"
 
@@ -66,4 +72,23 @@ func NewMachine(name string, x1, y1, x2, y2 int) *Machine {
 		),
 	)
 	return machine
+}
+
+func (machine *Machine) watchSparkline() {
+	var ticker = time.Tick(1 * time.Second)
+	for {
+		select {
+		case <-ticker:
+			ui.Render(machine.Grid)
+		case val := <-machine.chartStream:
+			machine.chart.Data = append(machine.chart.Data, val)
+			if len(machine.chart.Data) > 10 {
+				machine.chart.Data = machine.chart.Data[1:]
+			}
+		}
+	}
+}
+
+func (machine *Machine) GetSparklineStream() chan float64 {
+	return machine.chartStream
 }

@@ -6,8 +6,8 @@ import (
 )
 
 type ServiceResponse struct {
-	Address          string
-	ThroughputStream <-chan uint64
+	Address string
+	// ThroughputStream <-chan uint64
 }
 
 type Cluster interface {
@@ -30,20 +30,20 @@ func (mock *mockCluster) NewService(throughput, softLimit, hardLimit uint64) Ser
 	case 0:
 		mock.count++
 		return ServiceResponse{
-			Address:          "localhost:1234",
-			ThroughputStream: mock.mockThroughputStream(),
+			Address: "localhost:1234",
+			// ThroughputStream: mock.mockThroughputStream(),
 		}
 	case 1:
 		mock.count++
 		return ServiceResponse{
-			Address:          "localhost:5678",
-			ThroughputStream: mock.mockThroughputStream(),
+			Address: "localhost:5678",
+			//ThroughputStream: mock.mockThroughputStream(),
 		}
 	default:
 		mock.count++
 		return ServiceResponse{
-			Address:          "localhost:9999",
-			ThroughputStream: mock.mockThroughputStream(),
+			Address: "localhost:9999",
+			// ThroughputStream: mock.mockThroughputStream(),
 		}
 	}
 }

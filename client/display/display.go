@@ -102,3 +102,7 @@ func (display *Display) Shutdown() <-chan struct{} {
 func (display *Display) SetEventCallback(f func(string)) {
 	display.terminal.OnEnter(f)
 }
+
+func (display *Display) GetSparklineStream(machineIndex int) chan<- float64 {
+	return display.machines[machineIndex].GetSparklineStream()
+}

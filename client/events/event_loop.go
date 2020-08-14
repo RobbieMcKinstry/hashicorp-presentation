@@ -98,6 +98,7 @@ func (loop *EventLoop) HandleNewService(event string) {
 	// Throughput, Soft, Hard
 	var params = strings.Fields(serviceParams)
 	if len(params) != 3 {
+		fmt.Println("Expected three arguments")
 		ExitOnError(fmt.Errorf("Expected 3 parameters, found %v", len(params)))
 	}
 	throughput, err := strconv.ParseUint(params[0], 10, 64)
