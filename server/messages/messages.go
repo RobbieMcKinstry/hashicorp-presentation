@@ -1,4 +1,4 @@
-package main
+package messages
 
 // HealthCheckResponse tells the client if this server is alive or dead.
 type HealthCheckResponse struct {
