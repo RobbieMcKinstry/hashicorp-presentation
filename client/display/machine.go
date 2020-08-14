@@ -44,10 +44,11 @@ func NewMachine(name string, x1, y1, x2, y2 int) *Machine {
 		return label
 	}
 	/////// GAUGE CONFIG
-	machine.batch.Percent = 50
+	machine.batch.Percent = 0
 	machine.batch.Title = "Batch"
 	/////// SPARKLINE CONFIG
-	machine.chart.Data = []float64{5.0, 4.0, 3.5, 2.5}
+	// machine.chart.Data = []float64{5.0, 4.0, 3.5, 2.5}
+	machine.chart.Data = []float64{}
 	machine.chart.LineColor = ui.ColorGreen
 	machine.chart.TitleStyle.Fg = ui.ColorBlue
 
